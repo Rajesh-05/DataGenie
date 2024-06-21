@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chatbot</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <style>
         body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
             height: 100vh;
@@ -16,19 +19,21 @@
         }
 
         .container {
-            width: 80%;
+            width: 60%;
             height: 80%;
-            background-color: #f0f0f0;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            background-color: #f0f0f056;
+            border-radius: 30px;
+            border: #fff;
+            border-width: 2px;
             display: flex;
             flex-direction: column;
         }
 
         .chat-area {
             flex: 1;
-            padding: 20px;
+            padding: 20px 20px;
             overflow-y: scroll;
+
             display: flex;
             flex-direction: column;
         }
@@ -38,13 +43,11 @@
             margin: 10px 0;
             padding: 10px;
             border-radius: 5px;
-            white-space: pre-wrap; /* Preserve whitespace formatting */
-    font-family: monospace; /* Optional: use a monospace font to mimic console output */
         }
 
         .user {
             align-self: flex-end;
-            background: #007bff;
+            background: #489c48;
             color: #fff;
         }
 
@@ -58,54 +61,127 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px;
+            padding: 15px 20px;
             background: #f9f9f9;
-            border-top: 1px solid #e0e0e0;
+            border-radius: 20px; /* Add border radius to the input container */
+        }
+        .user-input{
+            border-radius: 5px;
         }
 
         input {
             flex: 1;
             padding: 8px;
             margin-right: 10px;
+            border-radius: 15px; /* Add border radius to the input field */
         }
 
         button {
             padding: 8px 15px;
-            background: #007bff;
+            background: #00b300; /* Change the blue color to green */
             color: #fff;
             border: none;
             cursor: pointer;
+            border-radius: 15px; /* Add border radius to the buttons */
         }
 
         .file-upload-btn {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 30px;
+            right: 30px;
+            border-radius: 5px; /* Add border radius to the file upload button */
+        }
+        .file-download-btn {
+            position: absolute;
+            top: 70px;
+            right: 30px;
+            border-radius: 5px; /* Add border radius to the file upload button */
+        }
+
+        .video-bg {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1;
+            transform: translate(-50%, -50%);
+            background-size: cover;
+        }
+
+        .message {
+            max-width: 70%;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add a subtle shadow for depth */
+        }
+
+        .user {
+            align-self: flex-end;
+            background: #489c48;
+            color: #fff;
+            border-radius: 10px 0px 10px 10px;
+
+        }
+
+        .bot {
+            align-self: flex-start;
+            background: #489c48;
+            color: #ffffff;
+            border-radius: 0px 10px 10px 10px;
         }
     </style>
 </head>
 <body>
+    <video class="video-bg" autoplay loop muted playsinline>
+        <source src="C:/Prodigy/DataGenie/static/videos/example.mp4" type="video/mp4">
+    </video>
     <div class="container">
         <div class="chat-area">
             <!-- Chat messages will be displayed here -->
         </div>
         <div class="input-container">
-            <input type="text" id="user-input" placeholder="Type your message...">
+            <input type="text" id="user-input" placeholder="Type your message..." style="border: 0cm;">
             <button id="send-btn">Send</button>
         </div>
-        <!-- <button id="file-upload-btn" class="file-upload-btn">Drop Files</button> -->
         <input type="file" id="file-input" style="display: none;" accept=".csv">
-        <button id="file-upload-btn" class="file-upload-btn">Drop Files</button>
-
+        <button id="file-upload-btn" class="file-upload-btn"> Upload File</button>
+        <button id="file-download-btn" onclick="download_csv()" class="file-download-btn">Download File</button>
     </div>
-
     <script>
+
+async function download_csv() {
+    try {
+        const response = await fetch('http://127.0.0.1:7000/download', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'text/csv'
+            }
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'data.csv';
+            link.click();
+        } else {
+            console.error('Failed to download CSV');
+        }
+    } catch (error) {
+        console.error('Error downloading CSV:', error);
+    }
+}
+
         document.getElementById('send-btn').addEventListener('click', async function() {
             var userInput = document.getElementById('user-input').value;
             if (userInput.trim() !== '') {
                 var userMessage = document.createElement('div');
                 userMessage.className = 'message user';
-                userMessage.textContent = userInput;
+                userMessage.innerHTML = userInput;
                 document.querySelector('.chat-area').appendChild(userMessage);
 
                 document.getElementById('user-input').value = '';
@@ -127,8 +203,8 @@
                     botResponse.className = 'message bot';
                 } else {
                     botResponse = document.createElement('div');
-                    botResponse.className = 'message bot';
-                    botResponse.textContent = data.response;
+                    botResponse.className = 'message bot ';
+                    botResponse.innerHTML = marked.parse(data.response);
                 }
                         document.querySelector('.chat-area').appendChild(botResponse);
                         document.querySelector('.chat-area').scrollTop = document.querySelector('.chat-area').scrollHeight;
@@ -141,7 +217,7 @@
             }
         });
 
-        document.getElementById('file-upload-btn').addEventListener('click', function() {
+    document.getElementById('file-upload-btn').addEventListener('click', function() {
     document.getElementById('file-input').click();
 });
 

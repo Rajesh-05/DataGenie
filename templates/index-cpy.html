@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f9f9f9;
+        }
+
+        .container {
+            width: 80%;
+            height: 80%;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: scroll;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            max-width: 70%;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap; /* Preserve whitespace formatting */
+    font-family: monospace; /* Optional: use a monospace font to mimic console output */
+        }
+
+        .user {
+            align-self: flex-end;
+            background: #007bff;
+            color: #fff;
+        }
+
+        .bot {
+            align-self: flex-start;
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background: #f9f9f9;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        input {
+            flex: 1;
+            padding: 8px;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 8px 15px;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        .file-upload-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="chat-area">
+            <!-- Chat messages will be displayed here -->
+        </div>
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="Type your message...">
+            <button id="send-btn">Send</button>
+        </div>
+        <!-- <button id="file-upload-btn" class="file-upload-btn">Drop Files</button> -->
+        <input type="file" id="file-input" style="display: none;" accept=".csv">
+        <button id="file-upload-btn" class="file-upload-btn">Drop Files</button>
+
+    </div>
+
+    <script>
+        document.getElementById('send-btn').addEventListener('click', async function() {
+            var userInput = document.getElementById('user-input').value;
+            if (userInput.trim() !== '') {
+                var userMessage = document.createElement('div');
+                userMessage.className = 'message user';
+                userMessage.textContent = userInput;
+                document.querySelector('.chat-area').appendChild(userMessage);
+
+                document.getElementById('user-input').value = '';
+
+                try {
+                    const response = await fetch('http://127.0.0.1:7000/send_message', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ message: userInput })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.response == "image") {
+                    botResponse = document.createElement('img');
+                    botResponse.src = data.path ;
+                    botResponse.className = 'message bot';
+                } else {
+                    botResponse = document.createElement('div');
+                    botResponse.className = 'message bot';
+                    botResponse.textContent = data.response;
+                }
+                        document.querySelector('.chat-area').appendChild(botResponse);
+                        document.querySelector('.chat-area').scrollTop = document.querySelector('.chat-area').scrollHeight;
+                    } else {
+                        throw new Error('Failed to fetch');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+        });
+
+        document.getElementById('file-upload-btn').addEventListener('click', function() {
+    document.getElementById('file-input').click();
+});
+
+document.getElementById('file-input').addEventListener('change', async function() {
+    var file = this.files[0];
+    if (file) {
+        var formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('http://127.0.0.1:7000/process_file', {
+                method: 'POST',
+                body: formData
+            });
+
+            
+                console.log('File processed successfully');
+                const data = await response.json();
+                botResponse = document.createElement('div');
+                    botResponse.className = 'message bot';
+                    botResponse.textContent = data.response;
+                    document.querySelector('.chat-area').appendChild(botResponse);
+                    document.querySelector('.chat-area').scrollTop = document.querySelector('.chat-area').scrollHeight;
+                   
+            
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+});
+
+    </script>
+</body>
+</html>
